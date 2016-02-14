@@ -1,0 +1,56 @@
+#!/bin/bash -e
+
+function usage {
+  echo "USAGE: $0 <s3-url> <destination>"
+  echo "  example: $0 s3://my-big-bucket/admin.pem admin.pem"
+}
+
+creds() {
+  local url="http://169.254.169.254/latest/meta-data/iam/security-credentials"
+
+  local instance_profile=`curl -s ${url}/`
+  local credentials=`curl -s ${url}/${instance_profile}`
+
+  access_key=`echo "${credentials}" \
+    | grep AccessKeyId | cut -d':' -f2 | sed 's/[^0-9A-Z]*//g'`
+  secret_key=`echo "${credentials}" \
+    | grep SecretAccessKey | cut -d':' -f2 | sed 's/[^0-9A-Za-z/+=]*//g'`
+  token=`echo "${credentials}" \
+    | grep Token | cut -d':' -f2 | sed 's/[^0-9A-Za-z/+=]*//g'`
+}
+
+get() {
+  local url="$1"
+
+  if [ "${url:0:5}" != "s3://" ]; then
+    usage
+    return 1
+  fi
+
+  local file="${2:--}"
+
+  local full_path="${url:4}"
+  local bucket=`echo ${url} | cut -d'/' -f3`
+  local short_path="`echo ${url} | cut -d'/' -f4-`"
+
+  local method="GET"
+  local md5=""
+  local date="$(date -u '+%a, %e %b %Y %H:%M:%S +0000')"
+
+  local string_to_sign=`printf "%s\n%s\n\n%s\nx-amz-security-token:%s\n%s" \
+    "$method" "$md5" "$date" "$token" "$full_path"`
+
+  local signature=`echo -n "$string_to_sign" \
+    | openssl sha1 -binary -hmac "${secret_key}" | openssl base64`
+  local authorization="AWS ${access_key}:${signature}"
+
+  curl -o "${file}" \
+    -s -f \
+    -H Date:"${date}" \
+    -H Authorization:"${authorization}" \
+    -H x-amz-security-token:${token} \
+    "https://${bucket}.s3.amazonaws.com/${short_path}"
+}
+
+creds
+get "$@"
