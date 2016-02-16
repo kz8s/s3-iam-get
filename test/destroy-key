@@ -1,0 +1,22 @@
+#!/bin/bash -e
+
+AWS=$(which aws)
+
+function usage {
+  echo "USAGE: $0 <region> <keyname>"
+  echo "  example: $0 us-west-1 my_key_pair"
+  exit 1
+}
+
+if [ -z "$1" ] || [ -z "$2" ]; then
+  usage
+fi
+
+region="${1}"
+keyname="${2}"
+pem="${keyname}.pem"
+
+echo "Removing keypair ${keyname} from ${region}"
+aws --region ${region} ec2 delete-key-pair \
+  --key-name ${keyname}
+rm -f ${pem} ||:

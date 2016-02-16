@@ -1,0 +1,31 @@
+#!/bin/bash -eux
+
+function usage {
+  echo "USAGE: $0 <region>>"
+  echo "  example: $0 us-west-1"
+  exit 1
+}
+
+if [ -z "$1" ]; then
+  usage
+fi
+region="${1}"
+
+bucket=`cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-z' | fold -w 16 | head -n 1`
+my_ip=$( curl -s http://myip.vg )
+pem="${bucket}.pem"
+tfvars="terraform.tfvars"
+
+./create-key ${region} ${bucket}
+
+ami=`curl -s \
+	$(printf "http://%s.release.core-os.net/amd64-usr/current/coreos_production_ami_%s_%s.txt" \
+  	stable hvm ${region})`
+
+cat <<EOF > ${tfvars}
+ami = "${ami}"
+bucket = "${bucket}"
+cidr-allow-ssh = "${my_ip}/32"
+key-name = "${bucket}"
+region = "${region}"
+EOF
