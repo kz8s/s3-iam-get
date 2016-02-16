@@ -3,7 +3,7 @@ TF:=`which terraform`
 
 BUCKET=`terraform output bucket`
 IP="`terraform output ip`"
-PEM="`terraform output bucket`.pem"
+PEM="${BUCKET}.pem"
 
 REGION:="us-west-1"
 
@@ -21,4 +21,9 @@ init: terraform.tfvars
 
 ssh: ; ssh -i ${PEM} core@${IP}
 
-.PHONY: apply destroy init ssh
+test:
+	ssh-keyscan -H ${IP} >> ~/.ssh/known_hosts
+	ssh -i ${PEM} core@${IP} grep -Fx test <test
+	ssh -i ${PEM} core@${IP} grep -Fx deep <deep
+
+.PHONY: apply destroy init ssh test
