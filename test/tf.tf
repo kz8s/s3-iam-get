@@ -24,7 +24,7 @@ resource "aws_s3_bucket" "s3-iam-get" {
   provisioner "local-exec" {
     command = <<LOCAL_EXEC
 echo "test" | aws s3 cp - s3://${ var.bucket }/test && \
-echo "deep" | aws s3 cp - s3://${ var.bucket }/deep/test
+echo "deep" | aws s3 cp - s3://${ var.bucket }/deep/deep
 LOCAL_EXEC
   }
 }
@@ -112,7 +112,8 @@ resource "aws_instance" "ai" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x /tmp/s3-iam-get",
-      "/tmp/s3-iam-get s3://${ var.bucket }/test ~/test"
+      "/tmp/s3-iam-get s3://${ var.bucket }/test ~/test",
+      "/tmp/s3-iam-get s3://${ var.bucket }/deep/deep ~/deep",
     ]
   }
 
