@@ -45,7 +45,7 @@ get() {
   local authorization="AWS ${access_key}:${signature}"
 
   curl -o "${file}" \
-    -s -f \
+    -s -f -L \
     -H Date:"${date}" \
     -H Authorization:"${authorization}" \
     -H x-amz-security-token:${token} \
