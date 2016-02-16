@@ -1,0 +1,21 @@
+# circle.yml
+general:
+  build_dir: test
+
+machine:
+  environment:
+    PATH: $HOME/.terraform:$PATH
+    TERRAFORM_VERSION: 0.6.11
+
+dependencies:
+  pre:
+    - wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+    - unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip -d ~/.terraform
+
+test:
+  pre:
+    - make apply
+  override:
+    - make test
+  post:
+    - make destroy
